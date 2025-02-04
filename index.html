@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snake Game</title>
+    <title>Space Snake</title>
     <style>
         body {
             font-family: sans-serif;
@@ -12,8 +12,15 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-color: #222;
+            background-color: #000;
+            /* Dark space background */
             color: #fff;
+            overflow: hidden;
+            /* Hide scrollbars */
+            background-image: url('https://i.imgur.com/wQpXJ7m.png');
+            /* Add Starry Background Image */
+            background-size: cover;
+            /* Make the starry background cover the entire space */
         }
         
         #game-container {
@@ -22,7 +29,10 @@
         
         #game-board {
             border: 2px solid #fff;
-            background-color: #000;
+            background-color: transparent;
+            /* Transparent background */
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            /* Subtle glow effect */
         }
         
         #score {
@@ -59,13 +69,39 @@
             font-size: 16px;
             cursor: pointer;
         }
+        /* Rocket style */
+        
+        .rocket {
+            width: 20px;
+            height: 30px;
+            background-image: url('https://i.imgur.com/Q8k0yF7.png');
+            /*Rocket sprite*/
+            background-size: cover;
+            /* Add glow */
+            box-shadow: 0 0 10px rgba(100, 149, 237, 0.8);
+            /* cornflowerblue glow */
+        }
+        /* Asteroid style */
+        
+        .asteroid {
+            width: 20px;
+            height: 20px;
+            background-image: url('https://i.imgur.com/qYVc2Bj.png');
+            /*Asteroid sprite*/
+            background-size: cover;
+        }
+        
+        h1 {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            /* Glow on title */
+        }
     </style>
 </head>
 
 <body>
 
     <div id="game-container">
-        <h1>Snake Game</h1>
+        <h1>Space Snake</h1>
         <canvas id="game-board" width="400" height="400"></canvas>
         <div id="score">Score: 0</div>
 
@@ -100,6 +136,7 @@
         let score = 0;
         let gameInterval;
         let gameOver = false;
+        let gameSpeed = 200; // Initial game speed (milliseconds)
 
         function generateFood() {
             food = {
@@ -118,15 +155,22 @@
         function draw() {
             ctx.clearRect(0, 0, boardSize, boardSize);
 
-            // Draw food
-            ctx.fillStyle = 'red';
-            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+            // Draw food (Asteroid)
+            drawAsteroid(food.x * gridSize, food.y * gridSize);
 
-            // Draw snake
-            ctx.fillStyle = 'green';
+            // Draw snake (Rocket)
             snake.forEach(segment => {
-                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+                drawRocket(segment.x * gridSize, segment.y * gridSize);
             });
+        }
+
+
+        function drawRocket(x, y) {
+            ctx.drawImage(rocketImg, x, y, gridSize, gridSize * 1.5); //Rocket is taller
+        }
+
+        function drawAsteroid(x, y) {
+            ctx.drawImage(asteroidImg, x, y, gridSize, gridSize);
         }
 
         function move() {
@@ -135,8 +179,12 @@
                 y: snake[0].y + dy
             };
 
-            // Check for collisions
-            if (head.x < 0 || head.x >= gridCount || head.y < 0 || head.y >= gridCount || collision(head)) {
+            // Check for collisions (Wrap around the edges)
+            head.x = (head.x < 0) ? gridCount - 1 : (head.x >= gridCount) ? 0 : head.x;
+            head.y = (head.y < 0) ? gridCount - 1 : (head.y >= gridCount) ? 0 : head.y;
+
+
+            if (collision(head)) {
                 endGame();
                 return;
             }
@@ -148,6 +196,7 @@
                 score += 10;
                 scoreDisplay.textContent = `Score: ${score}`;
                 generateFood();
+                increaseSpeed(); // Increase speed when eating food
             } else {
                 snake.pop();
             }
@@ -206,8 +255,18 @@
             score = 0;
             scoreDisplay.textContent = `Score: ${score}`;
             gameOver = false;
+            gameSpeed = 200; // Reset game speed to initial value
             gameOverScreen.style.display = 'none';
-            gameInterval = setInterval(gameLoop, 100);
+            clearInterval(gameInterval); // Clear any existing interval
+            gameInterval = setInterval(gameLoop, gameSpeed);
+        }
+
+        function increaseSpeed() {
+            if (gameSpeed > 50) { //Set a minimum speed limit
+                gameSpeed -= 10; // Reduce the interval to increase speed
+                clearInterval(gameInterval); // Clear the old interval
+                gameInterval = setInterval(gameLoop, gameSpeed); // Set a new interval with the updated speed
+            }
         }
 
         function endGame() {
@@ -224,8 +283,28 @@
 
         document.addEventListener('keydown', changeDirection);
 
-        // Initial setup
-        startGame();
+
+        // Load images
+        const rocketImg = new Image();
+        rocketImg.src = 'https://i.imgur.com/Q8k0yF7.png'; //Rocket image URL
+        const asteroidImg = new Image();
+        asteroidImg.src = 'https://i.imgur.com/qYVc2Bj.png'; //Asteroid image URL
+
+
+        // Make sure images are loaded before starting the game
+        let imagesLoaded = 0;
+        const totalImages = 2; //Total number of images to load
+
+        function imageLoaded() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                // All images loaded, start the game
+                startGame();
+            }
+        }
+
+        rocketImg.onload = imageLoaded;
+        asteroidImg.onload = imageLoaded;
     </script>
 
 </body>
